@@ -1,5 +1,6 @@
 ﻿using Mono.Cecil;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.Caching;
 
@@ -18,11 +19,12 @@ namespace Obfuscar.Helpers
 			return false;
 		}
 
-		public static bool? MarkedToRename (this IMemberDefinition type, bool fromMember = false)
+		public static bool? MarkedToRename (this IMemberDefinition type, bool fromMember = false, IEnumerable<string> additionalSkipAttributesNames = null)
 		{
 			var obfuscarObfuscate = typeof(ObfuscateAttribute).FullName;
 			var reflectionObfuscate = typeof(System.Reflection.ObfuscationAttribute).FullName;
 
+			bool hasAdditionalSkipAttribute = false;
 			foreach (CustomAttribute attr in type.CustomAttributes) {
 				var attrFullName = attr.Constructor.DeclaringType.FullName;
 				if (attrFullName == obfuscarObfuscate)
@@ -37,7 +39,21 @@ namespace Obfuscar.Helpers
 
 					return rename;
 				}
+
+				if (additionalSkipAttributesNames != null && !hasAdditionalSkipAttribute)
+				{
+					foreach (string additionalSkipAttributeName in additionalSkipAttributesNames)
+					{
+						if (attrFullName == additionalSkipAttributeName)
+						{
+							hasAdditionalSkipAttribute = true;
+						}
+					}
+				}
 			}
+
+			if (hasAdditionalSkipAttribute)
+				return false;
 
 			return type.DeclaringType == null ? null : MarkedToRename (type.DeclaringType, true);
 		}

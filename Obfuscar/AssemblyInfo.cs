@@ -1,17 +1,17 @@
 #region Copyright (c) 2007 Ryan Williams <drcforbin@gmail.com>
 /// <copyright>
 /// Copyright (c) 2007 Ryan Williams <drcforbin@gmail.com>
-/// 
+///
 /// Permission is hereby granted, free of charge, to any person obtaining a copy
 /// of this software and associated documentation files (the "Software"), to deal
 /// in the Software without restriction, including without limitation the rights
 /// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 /// copies of the Software, and to permit persons to whom the Software is
 /// furnished to do so, subject to the following conditions:
-/// 
+///
 /// The above copyright notice and this permission notice shall be included in
 /// all copies or substantial portions of the Software.
-/// 
+///
 /// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 /// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 /// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -53,6 +53,7 @@ namespace Obfuscar
 		private readonly PredicateCollection<MethodKey> forceStringHiding = new PredicateCollection<MethodKey> ();
 		private readonly List<AssemblyInfo> references = new List<AssemblyInfo> ();
 		private readonly List<AssemblyInfo> referencedBy = new List<AssemblyInfo> ();
+		private readonly List<string> additionalSkipAttributesNames = new List<string>();
 		private List<TypeReference> unrenamedTypeReferences;
 		private List<MemberReference> unrenamedReferences;
 		private string filename;
@@ -148,6 +149,10 @@ namespace Obfuscar
 							Project.ReadIncludeTag(reader, project, (includeReader, proj) => FromXmlReadNode(includeReader, proj, vars, info));
 							break;
 						}
+						case "CustomSkipAttribute":
+							string attributeName = Helper.GetAttribute(reader, "name");
+							info.additionalSkipAttributesNames.Add(attributeName);
+							break;
 						case "SkipNamespace":
 							if (rx != null)
 							{
@@ -710,7 +715,7 @@ namespace Obfuscar
 
 		public bool ShouldSkip (TypeKey type, InheritMap map, bool keepPublicApi, bool hidePrivateApi, bool markedOnly, out string message)
 		{
-			var attribute = type.TypeDefinition.MarkedToRename ();
+			var attribute = type.TypeDefinition.MarkedToRename (additionalSkipAttributesNames: additionalSkipAttributesNames);
 			if (attribute != null) {
 				message = "attribute";
 				return !attribute.Value;
@@ -783,14 +788,14 @@ namespace Obfuscar
 
 		public bool ShouldSkipParams (MethodKey method, InheritMap map, bool keepPublicApi, bool hidePrivateApi, bool markedOnly, out string message)
 		{
-			var attribute = method.Method.MarkedToRename ();
+			var attribute = method.Method.MarkedToRename (additionalSkipAttributesNames: additionalSkipAttributesNames);
 			// skip runtime methods
 			if (attribute != null) {
 				message = "attribute";
 				return !attribute.Value;
 			}
 
-			var parent = method.DeclaringType.MarkedToRename ();
+			var parent = method.DeclaringType.MarkedToRename (additionalSkipAttributesNames: additionalSkipAttributesNames);
 			if (parent != null) {
 				message = "type attribute";
 				return !parent.Value;
@@ -858,13 +863,13 @@ namespace Obfuscar
 				return true;
 			}
 
-			var attribute = field.Field.MarkedToRename ();
+			var attribute = field.Field.MarkedToRename (additionalSkipAttributesNames: additionalSkipAttributesNames);
 			if (attribute != null) {
 				message = "attribute";
 				return !attribute.Value;
 			}
 
-			var parent = field.DeclaringType.MarkedToRename ();
+			var parent = field.DeclaringType.MarkedToRename (additionalSkipAttributesNames: additionalSkipAttributesNames);
 			if (parent != null) {
 				message = "type attribute";
 				return !parent.Value;
@@ -916,13 +921,13 @@ namespace Obfuscar
 				return true;
 			}
 
-			var attribute = prop.Property.MarkedToRename ();
+			var attribute = prop.Property.MarkedToRename (additionalSkipAttributesNames: additionalSkipAttributesNames);
 			if (attribute != null) {
 				message = "attribute";
 				return !attribute.Value;
 			}
 
-			var parent = prop.DeclaringType.MarkedToRename ();
+			var parent = prop.DeclaringType.MarkedToRename (additionalSkipAttributesNames: additionalSkipAttributesNames);
 			if (parent != null) {
 				message = "type attribute";
 				return !parent.Value;
@@ -970,14 +975,14 @@ namespace Obfuscar
 				return true;
 			}
 
-			var attribute = evt.Event.MarkedToRename ();
+			var attribute = evt.Event.MarkedToRename (additionalSkipAttributesNames: additionalSkipAttributesNames);
 			// skip runtime methods
 			if (attribute != null) {
 				message = "attribute";
 				return !attribute.Value;
 			}
 
-			var parent = evt.DeclaringType.MarkedToRename ();
+			var parent = evt.DeclaringType.MarkedToRename (additionalSkipAttributesNames: additionalSkipAttributesNames);
 			if (parent != null) {
 				message = "type attribute";
 				return !parent.Value;
